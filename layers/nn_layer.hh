@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include "../nn_utils/matrix.hh"
 
@@ -13,3 +14,5 @@ public:
 
     std::string getName() { return this->name; };
 };
+
+inline NNLayer::~NNLayer() {}

@@ -1,3 +1,4 @@
+#pragma once
 #include "nn_layer.hh"
 
 class Sigmoid : public NNLayer {

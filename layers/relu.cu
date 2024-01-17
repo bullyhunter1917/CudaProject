@@ -1,46 +1,35 @@
 #include <iostream>
 #include "relu.hh"
 
-__device__ float relu(float x) {
-    if (x > 0) {
-        return x;
-    }
-    else {
-        return 0.0;
-    }
-}
-
-__device__ float reluback(float x) {
-    if (x > 0) {
-        return 1.0;
-    }
-    else {
-        return 0.0;
-    }
-}
-
 __global__ void reluActivationForward(float* Z, float* A, int Z_x_dim, int Z_y_dim) {
+
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < Z_x_dim * Z_y_dim) {
-        A[index] = relu(Z[index]);
+        A[index] = fmaxf(Z[index], 0);
     }
 }
 
 __global__ void reluActivationBackprop(float* Z, float* dA, float* dZ, int Z_x_dim, int Z_y_dim) {
+
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < Z_x_dim * Z_y_dim) {
-        dZ[index] = dA[index] * reluback(Z[index]);
+        if (Z[index] > 0) {
+            dZ[index] = dA[index];
+        }
+        else {
+            dZ[index] = 0;
+        }
     }
 }
 
 ReLu::ReLu(std::string name) {
-    this->name = name;
-    this->A = Matrix();
-    this->Z = Matrix();
-    this->dZ = Matrix();
+	this->name = name;
 }
+
+ReLu::~ReLu()
+{ }
 
 Matrix& ReLu::forward(Matrix& Z) {
     this->Z = Z;

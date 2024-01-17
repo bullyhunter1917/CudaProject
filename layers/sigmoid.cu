@@ -1,54 +1,58 @@
-#include <iostream>
 #include "sigmoid.hh"
+#include <iostream>
 
 __device__ float sigmoid(float x) {
-    return 1.0f / (1 + exp(-x));
+	return 1.0f / (1 + exp(-x));
 }
 
-__global__ void sigmoidActivationForward(float* Z, float* A, int Z_x_dim, int Z_y_dim) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void sigmoidActivationForward(float* Z, float* A,
+										 int Z_x_dim, int Z_y_dim) {
 
-    if (index < Z_x_dim * Z_y_dim) {
-        A[index] = sigmoid(Z[index]);
-    }
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (index < Z_x_dim * Z_y_dim) {
+		A[index] = sigmoid(Z[index]);
+	}
 }
 
-__global__ void sigmoidActivationBackprop(float* Z, float* dA, float* dZ, int Z_x_dim, int Z_y_dim) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void sigmoidActivationBackprop(float* Z, float* dA, float* dZ,
+										  int Z_x_dim, int Z_y_dim) {
 
-    if (index < Z_x_dim * Z_y_dim) {
-        dZ[index] = dA[index] * sigmoid(Z[index]) * (1 - sigmoid(Z[index]));
-    }
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (index < Z_x_dim * Z_y_dim) {
+		dZ[index] = dA[index] * sigmoid(Z[index]) * (1 - sigmoid(Z[index]));
+	}
 }
 
 Sigmoid::Sigmoid(std::string name) {
-    this->name = name;
-    this->A = Matrix();
-    this->Z = Matrix();
-    this->dZ = Matrix();
+	this->name = name;
 }
 
+Sigmoid::~Sigmoid()
+{ }
+
 Matrix& Sigmoid::forward(Matrix& Z) {
-    this->Z = Z;
-    A.allocateMemoryIfNotAllocated(Z.shape);
+	this->Z = Z;
+	A.allocateMemoryIfNotAllocated(Z.shape);
 
-    dim3 block_size(256);
-    dim3 num_of_blocks((Z.shape.y * Z.shape.x + block_size.x - 1) / block_size.x);
+	dim3 block_size(256);
+	dim3 num_of_blocks((Z.shape.y * Z.shape.x + block_size.x - 1) / block_size.x);
 
-    sigmoidActivationForward<<<num_of_blocks, block_size>>>(Z.data_device.get(), A.data_device.get(), Z.shape.x, Z.shape.y);
-    //NNException::throwIfDeviceErrorsOccurred("Cannot perform sigmoid forward propagation.");
+	sigmoidActivationForward<<<num_of_blocks, block_size>>>(Z.data_device.get(), A.data_device.get(),
+														   	Z.shape.x, Z.shape.y);
 
-    return A;
+	return A;
 }
 
 Matrix& Sigmoid::backprop(Matrix& dA, float learning_rate) {
-    dZ.allocateMemoryIfNotAllocated(Z.shape);
+	dZ.allocateMemoryIfNotAllocated(Z.shape);
 
-    dim3 block_size(256);
-    dim3 num_of_blocks((Z.shape.y * Z.shape.x + block_size.x - 1) / block_size.x);
+	dim3 block_size(256);
+	dim3 num_of_blocks((Z.shape.y * Z.shape.x + block_size.x - 1) / block_size.x);
+	sigmoidActivationBackprop<<<num_of_blocks, block_size>>>(Z.data_device.get(), dA.data_device.get(),
+															 dZ.data_device.get(),
+															 Z.shape.x, Z.shape.y);
 
-    sigmoidActivationBackprop<<<num_of_blocks, block_size>>>(Z.data_device.get(), dA.data_device.get(), dZ.data_device.get(), Z.shape.x, Z.shape.y);
-    //NNException::throwIfDeviceErrorsOccurred("Cannot perform sigmoid backward propagation.");
-
-    return dZ;
+	return dZ;
 }

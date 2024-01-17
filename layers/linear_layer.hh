@@ -1,3 +1,4 @@
+#pragma once
 #include "nn_layer.hh"
 
 class LinearLayer : public NNLayer {
@@ -30,5 +31,5 @@ public:
     int getYDim() const;
 
     Matrix getWeightsMatrix() const;
-    Matrix getBiasMatrix() const;
+    Matrix getBiasVector() const;
 };

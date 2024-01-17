@@ -1,3 +1,5 @@
+#pragma once
+
 struct Shape {
 	size_t x, y;
 
